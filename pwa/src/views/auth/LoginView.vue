@@ -159,11 +159,11 @@ onMounted(async () => {
   error.value   = ''
 
   try {
-    // Simpan token dulu
+    // Simpan token dulu (interceptor akan mengirimnya sebagai Bearer)
     localStorage.setItem('asf_token', ssoToken)
 
-    // Ambil data user dari API
-    const res = await api.get('/api/v1/auth/me')
+    // Validasi token — ambil data user dari API (baseURL sudah termasuk /api/v1)
+    const res = await api.get('/auth/me')
     const user = res.data.user
 
     // Simpan ke auth store
@@ -172,8 +172,9 @@ onMounted(async () => {
     // Bersihkan token dari URL agar tidak muncul di history/share
     window.history.replaceState({}, '', window.location.pathname)
 
-    // Muat santri lalu masuk ke dashboard
-    await santri.fetch()
+    // Muat santri (non-kritis — jangan gagalkan sesi jika ini error)
+    try { await santri.fetch() } catch { /* dashboard akan retry */ }
+
     router.replace('/dashboard')
   } catch {
     // Token expired / invalid — hapus dan minta login ulang
