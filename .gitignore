@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+pwa/node_modules/
+
+# Build output
+pwa/dist/
+pwa/.output/
+
+# Environment files — JANGAN pernah commit .env.production dengan secrets
+pwa/.env.production
+pwa/.env.local
+pwa/.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vite cache
+pwa/.vite/
+
+# TypeScript cache
+*.tsbuildinfo
