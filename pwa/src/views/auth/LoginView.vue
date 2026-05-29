@@ -133,7 +133,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSantriStore } from '@/stores/santri'
 import { UserIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, ExclamationCircleIcon } from '@heroicons/vue/24/outline'
-import api from '@/api/client'
+import { api } from '@/api/client'
 
 const auth    = useAuthStore()
 const santri  = useSantriStore()
