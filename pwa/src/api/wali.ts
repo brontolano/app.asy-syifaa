@@ -47,6 +47,19 @@ export interface Tagihan {
   invoices: Invoice[]
 }
 
+export interface PaymentMethod {
+  id: number
+  code: string
+  type: 'bank' | 'ewallet' | 'qris'
+  name: string
+  bank_name: string | null
+  account_number: string | null
+  account_holder: string | null
+  icon: string | null
+  qris_image_url: string | null
+  instructions: string | null
+}
+
 export interface Izin {
   id: number
   jenis_izin: string
@@ -88,6 +101,10 @@ export const waliApi = {
     : api.post(`/wali/santri/${studentId}/tagihan/${invoiceId}/bukti-bayar`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       }).then(r => r.data),
+
+  paymentMethods: (studentId: number) => DEMO
+    ? Promise.resolve([] as PaymentMethod[])
+    : api.get<{ ok: boolean; data: PaymentMethod[] }>(`/wali/santri/${studentId}/payment-methods`).then(r => r.data.data),
 
   getIzin: (studentId: number) => DEMO
     ? mockApi.getIzin(studentId) as Promise<Izin[]>
