@@ -135,6 +135,12 @@ export const waliApi = {
     ? mockApi.freezeTabungan(studentId, frozen)
     : api.post(`/wali/santri/${studentId}/tabungan/freeze`, { frozen }).then(r => r.data),
 
+  topupTabungan: (studentId: number, formData: FormData) => DEMO
+    ? Promise.resolve({ ok: true, message: 'Bukti setoran terkirim (demo).' })
+    : api.post(`/wali/santri/${studentId}/tabungan/topup`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }).then(r => r.data),
+
   // ── Jadwal & Absensi ───────────────────────────────────────────
   jadwal: (studentId: number) => DEMO
     ? mockApi.jadwal(studentId)

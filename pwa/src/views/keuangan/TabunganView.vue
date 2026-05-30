@@ -54,6 +54,17 @@
       </div>
     </div>
 
+    <!-- Action: Setor Saldo -->
+    <div class="px-4 mb-4">
+      <button @click="openTopupSheet"
+              class="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl
+                     bg-brand-700 text-white font-bold shadow-sm shadow-brand-900/20
+                     active:bg-brand-800 active:scale-[0.99] transition-transform">
+        <PlusCircleIcon class="w-5 h-5" />
+        Setor Saldo
+      </button>
+    </div>
+
     <!-- Limit Jajan Harian -->
     <div class="px-4 mb-4">
       <div class="bg-white rounded-2xl shadow-sm border border-gray-100/80 p-5">
@@ -160,14 +171,108 @@
       </div>
     </Transition>
 
+    <!-- Topup Backdrop -->
+    <Transition name="fade">
+      <div v-if="topupSheet" class="fixed inset-0 bg-black/50 z-[60]" @click="topupSheet = false" />
+    </Transition>
+
+    <!-- Topup Sheet -->
+    <Transition name="sheet-up">
+      <div v-if="topupSheet"
+           class="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl shadow-2xl px-5 pt-5
+                  max-h-[90vh] overflow-y-auto"
+           :style="{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }">
+        <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+        <h3 class="text-gray-800 font-bold text-base mb-1">Setor Saldo Tabungan</h3>
+        <p class="text-gray-400 text-sm mb-4">Transfer ke rekening pondok, lalu unggah bukti transfer.</p>
+
+        <!-- Metode pembayaran -->
+        <template v-if="methods.length">
+          <p class="text-gray-700 font-semibold text-sm mb-2">Tujuan Transfer</p>
+          <div class="space-y-2 mb-5">
+            <div v-for="m in methods" :key="m.id"
+                 class="rounded-2xl border border-gray-100 bg-gray-50 p-3.5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-800 font-bold text-sm">{{ m.bank_name ?? m.name }}</p>
+                  <p v-if="m.account_number" class="text-gray-600 text-sm font-mono mt-0.5">{{ m.account_number }}</p>
+                  <p v-if="m.account_holder" class="text-gray-400 text-xs mt-0.5">a.n. {{ m.account_holder }}</p>
+                </div>
+                <button v-if="m.account_number" @click="copyText(m.account_number)"
+                        class="text-brand-700 text-xs font-bold px-3 py-1.5 rounded-lg bg-brand-50 active:bg-brand-100">
+                  Salin
+                </button>
+              </div>
+              <img v-if="m.qris_image_url" :src="m.qris_image_url"
+                   class="w-40 h-40 object-contain mx-auto mt-3 rounded-xl bg-white p-2" alt="QRIS" />
+            </div>
+          </div>
+        </template>
+
+        <!-- Form -->
+        <div class="space-y-3 mb-5">
+          <div>
+            <label class="text-gray-700 text-xs font-semibold mb-1.5 block">Nominal Setoran</label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">Rp</span>
+              <input v-model="topupForm.nominal" type="number" inputmode="numeric" placeholder="100.000"
+                     class="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 text-gray-800 text-base
+                            focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400 bg-gray-50" />
+            </div>
+          </div>
+          <div>
+            <label class="text-gray-700 text-xs font-semibold mb-1.5 block">Tanggal Transfer</label>
+            <input v-model="topupForm.tanggal" type="date"
+                   class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-gray-800 text-base
+                          focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400 bg-gray-50" />
+          </div>
+          <div>
+            <label class="text-gray-700 text-xs font-semibold mb-1.5 block">Nama Pengirim (opsional)</label>
+            <input v-model="topupForm.namaPengirim" type="text" placeholder="Nama di rekening pengirim"
+                   class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-gray-800 text-base
+                          focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400 bg-gray-50" />
+          </div>
+          <div>
+            <label class="text-gray-700 text-xs font-semibold mb-1.5 block">Bukti Transfer</label>
+            <label class="flex flex-col items-center justify-center gap-2 py-6 rounded-xl border-2 border-dashed
+                          border-gray-200 bg-gray-50 cursor-pointer active:bg-gray-100">
+              <template v-if="topupForm.fotoPreview">
+                <img :src="topupForm.fotoPreview" class="w-28 h-28 object-cover rounded-lg" alt="Preview" />
+                <span class="text-brand-700 text-xs font-semibold">Ganti foto</span>
+              </template>
+              <template v-else>
+                <PhotoIcon class="w-8 h-8 text-gray-300" />
+                <span class="text-gray-400 text-xs">Ketuk untuk unggah foto/screenshot</span>
+              </template>
+              <input type="file" accept="image/*" class="hidden" @change="onFotoChange" />
+            </label>
+          </div>
+        </div>
+
+        <p v-if="topupError" class="text-red-500 text-xs mb-3">{{ topupError }}</p>
+
+        <div class="flex gap-3">
+          <button @click="topupSheet = false"
+                  class="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-700 font-semibold">
+            Batal
+          </button>
+          <button @click="submitTopup" :disabled="submittingTopup"
+                  class="flex-1 py-3.5 rounded-2xl bg-brand-700 text-white font-bold
+                         disabled:opacity-60 active:bg-brand-800">
+            {{ submittingTopup ? 'Mengirim...' : 'Kirim Bukti' }}
+          </button>
+        </div>
+      </div>
+    </Transition>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useSantriStore } from '@/stores/santri'
-import { waliApi } from '@/api/wali'
-import { ChevronLeftIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
+import { waliApi, type PaymentMethod } from '@/api/wali'
+import { ChevronLeftIcon, LockClosedIcon, PlusCircleIcon, PhotoIcon } from '@heroicons/vue/24/outline'
 
 const santriStore  = useSantriStore()
 const activeSantri = computed(() => santriStore.active)
@@ -176,6 +281,19 @@ const tabungan     = ref<any>(null)
 const sheet        = ref(false)
 const newLimit     = ref('')
 const savingLimit  = ref(false)
+
+// ── Topup state ──────────────────────────────────────────────
+const topupSheet      = ref(false)
+const methods         = ref<PaymentMethod[]>([])
+const submittingTopup = ref(false)
+const topupError      = ref('')
+const topupForm = ref<{ nominal: string; tanggal: string; namaPengirim: string; foto: File | null; fotoPreview: string }>({
+  nominal: '',
+  tanggal: new Date().toISOString().slice(0, 10),
+  namaPengirim: '',
+  foto: null,
+  fotoPreview: '',
+})
 
 const limitProgress = computed(() => {
   if (!tabungan.value?.limit_harian) return 0
@@ -210,6 +328,50 @@ async function toggleFreeze() {
   tabungan.value.frozen = newState
   try { await waliApi.freezeTabungan(activeSantri.value.id, newState) }
   catch { tabungan.value.frozen = !newState }
+}
+
+async function openTopupSheet() {
+  topupError.value = ''
+  topupSheet.value = true
+  if (!methods.value.length && activeSantri.value) {
+    try { methods.value = await waliApi.paymentMethods(activeSantri.value.id) }
+    catch { /* metode opsional */ }
+  }
+}
+
+function onFotoChange(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  topupForm.value.foto = file
+  topupForm.value.fotoPreview = URL.createObjectURL(file)
+}
+
+async function copyText(text: string) {
+  try { await navigator.clipboard.writeText(text) } catch { /* noop */ }
+}
+
+async function submitTopup() {
+  if (!activeSantri.value) return
+  topupError.value = ''
+  const nominal = parseInt(topupForm.value.nominal || '0')
+  if (!nominal || nominal < 10000) { topupError.value = 'Nominal minimal Rp 10.000'; return }
+  if (!topupForm.value.foto) { topupError.value = 'Unggah bukti transfer terlebih dahulu'; return }
+
+  submittingTopup.value = true
+  try {
+    const fd = new FormData()
+    fd.append('foto', topupForm.value.foto)
+    fd.append('nominal_transfer', String(nominal))
+    fd.append('tanggal_transfer', topupForm.value.tanggal)
+    if (topupForm.value.namaPengirim) fd.append('nama_pengirim', topupForm.value.namaPengirim)
+    await waliApi.topupTabungan(activeSantri.value.id, fd)
+    topupSheet.value = false
+    topupForm.value = { nominal: '', tanggal: new Date().toISOString().slice(0, 10), namaPengirim: '', foto: null, fotoPreview: '' }
+  } catch (err: any) {
+    topupError.value = err?.response?.data?.message ?? 'Gagal mengirim bukti. Coba lagi.'
+  } finally {
+    submittingTopup.value = false
+  }
 }
 
 onMounted(async () => {
