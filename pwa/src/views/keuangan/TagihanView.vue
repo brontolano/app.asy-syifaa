@@ -108,13 +108,13 @@
 
     <!-- Backdrop -->
     <Transition name="fade">
-      <div v-if="sheet" class="fixed inset-0 bg-black/50 z-40" @click="closeSheet" />
+      <div v-if="sheet" class="fixed inset-0 bg-black/50 z-[60]" @click="closeSheet" />
     </Transition>
 
     <!-- Bottom Sheet Upload -->
     <Transition name="sheet-up">
       <div v-if="sheet"
-           class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl px-5 pt-5"
+           class="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl shadow-2xl px-5 pt-5"
            :style="{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }">
         <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
 

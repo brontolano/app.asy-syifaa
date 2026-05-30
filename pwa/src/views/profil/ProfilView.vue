@@ -124,14 +124,14 @@
 
     <!-- ── Backdrop ───────────────────────────────────────────── -->
     <Transition name="fade">
-      <div v-if="sheet || confirmLogout" class="fixed inset-0 bg-black/50 z-40"
+      <div v-if="sheet || confirmLogout" class="fixed inset-0 bg-black/50 z-[60]"
            @click="sheet = null; confirmLogout = false" />
     </Transition>
 
     <!-- ── Sheet: Ganti HP ────────────────────────────────────── -->
     <Transition name="sheet-up">
       <div v-if="sheet === 'phone'"
-           class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl px-5 pt-5"
+           class="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl shadow-2xl px-5 pt-5"
            :style="{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }">
         <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
         <div class="flex items-center gap-3 mb-5">
@@ -174,7 +174,7 @@
     <!-- ── Sheet: Ubah Password ───────────────────────────────── -->
     <Transition name="sheet-up">
       <div v-if="sheet === 'password'"
-           class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl px-5 pt-5"
+           class="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl shadow-2xl px-5 pt-5"
            :style="{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }">
         <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
         <div class="flex items-center gap-3 mb-5">
@@ -221,7 +221,7 @@
     <!-- ── Konfirmasi Logout ───────────────────────────────────── -->
     <Transition name="sheet-up">
       <div v-if="confirmLogout"
-           class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl px-5 pt-5"
+           class="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl shadow-2xl px-5 pt-5"
            :style="{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }">
         <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
         <div class="text-center mb-6">

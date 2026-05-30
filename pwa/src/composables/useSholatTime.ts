@@ -80,7 +80,21 @@ export function useSholatTime() {
     return `${pad2(h)}:${pad2(m)}:${pad2(s)}`
   })
 
-  // ── Fetch from aladhan API ─────────────────────────────────────
+  // ── Reverse geocode (OpenStreetMap Nominatim, gratis tanpa key) ──
+  async function reverseGeocode(lat: number, lng: number) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=12&accept-language=id`
+      const res = await fetch(url, { headers: { Accept: 'application/json' } })
+      const json = await res.json()
+      const a = json?.address ?? {}
+      const name =
+        a.city || a.town || a.village || a.municipality ||
+        a.county || a.suburb || a.state_district || a.state
+      if (name) cityName.value = name
+    } catch { /* keep previous cityName */ }
+  }
+
+  // ── Fetch waktu sholat dari aladhan API ────────────────────────
   async function fetchFromCoords(lat: number, lng: number) {
     try {
       const ts  = Math.floor(Date.now() / 1000)
@@ -89,11 +103,8 @@ export function useSholatTime() {
       const json = await res.json()
       if (json.code === 200) {
         rawTimes.value = json.data.timings
-        // Coba dapat nama kota dari reverse geocode sederhana
-        try {
-          const geoRes = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=auto&country=ID&method=11`)
-          cityName.value = json.data.meta?.timezone?.split('/')[1]?.replace('_',' ') ?? 'Lokasi Anda'
-        } catch { /* ignore */ }
+        // Nama kota akurat lewat reverse geocode GPS user
+        await reverseGeocode(lat, lng)
         return
       }
     } catch { /* fallthrough */ }
@@ -117,7 +128,7 @@ export function useSholatTime() {
           loading.value  = false
           error.value    = true
         },
-        { timeout: 8000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
       )
     } else {
       rawTimes.value = DEMO_TIMES
