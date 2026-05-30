@@ -33,3 +33,18 @@ pwa/.vite/
 
 # TypeScript cache
 *.tsbuildinfo
+
+# TWA / Android — JANGAN commit keystore & artefak build
+twa/*.keystore
+twa/*.jks
+twa/android.keystore
+twa/*.aab
+twa/*.apk
+twa/app-release-*
+twa/.gradle/
+twa/build/
+twa/app/build/
+twa/keystore.json
+twa/KEYSTORE_INFO.txt
+twa/local.properties
+twa/twa-manifest.prod.json
