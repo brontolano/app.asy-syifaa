@@ -48,3 +48,6 @@ twa/keystore.json
 twa/KEYSTORE_INFO.txt
 twa/local.properties
 twa/twa-manifest.prod.json
+# Local-only deploy key generated for GitHub Actions
+.github/gha_vps_ed25519
+.github/gha_vps_ed25519.pub
