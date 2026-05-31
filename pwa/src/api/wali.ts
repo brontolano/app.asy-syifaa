@@ -38,12 +38,14 @@ export interface TahfidzRecord {
 
 export interface TagihanItem { id: number; nama_item: string; nominal: number }
 export interface Invoice {
-  id: number; keterangan: string; status: string
-  due_date: string | null; total: number; terbayar: number
+  id: number; nomor?: string; jenis?: string; keterangan: string; status: string
+  is_prioritas?: boolean
+  due_date: string | null; total: number; terbayar: number; sisa?: number
   items: TagihanItem[]
 }
 export interface Tagihan {
   total_tunggakan: number
+  tunggakan_prioritas?: number
   invoices: Invoice[]
 }
 
@@ -139,6 +141,13 @@ export const waliApi = {
     ? Promise.resolve({ ok: true, message: 'Bukti setoran terkirim (demo).' })
     : api.post(`/wali/santri/${studentId}/tabungan/topup`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+      }).then(r => r.data),
+
+  bayarTagihanDariSaldo: (studentId: number, invoiceId: number, nominal?: number) => DEMO
+    ? Promise.resolve({ ok: true, message: 'Tagihan dilunasi dari saldo (demo).' })
+    : api.post(`/wali/santri/${studentId}/tabungan/bayar-tagihan`, {
+        invoice_id: invoiceId,
+        ...(nominal ? { nominal } : {}),
       }).then(r => r.data),
 
   // ── Jadwal & Absensi ───────────────────────────────────────────

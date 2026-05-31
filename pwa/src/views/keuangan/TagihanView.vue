@@ -39,6 +39,25 @@
       </div>
     </div>
 
+    <!-- Saldo info -->
+    <div v-if="!loading" class="px-4 mb-3">
+      <div class="bg-white rounded-2xl border border-gray-100/80 shadow-sm px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+            <WalletIcon class="w-4 h-4 text-emerald-600" />
+          </div>
+          <div>
+            <p class="text-[10px] text-gray-400">Saldo Tabungan</p>
+            <p class="text-sm font-bold text-gray-800">Rp {{ saldo.toLocaleString('id-ID') }}</p>
+          </div>
+        </div>
+        <button @click="$router.push({ name: 'tabungan' })"
+                class="text-brand-700 text-xs font-bold px-3 py-1.5 rounded-lg bg-brand-50 active:bg-brand-100">
+          Setor Saldo
+        </button>
+      </div>
+    </div>
+
     <!-- Invoice List -->
     <div class="px-4 flex flex-col gap-3">
       <template v-if="loading">
@@ -59,7 +78,13 @@
           }" />
           <div class="p-4">
             <div class="flex items-start justify-between gap-2 mb-2">
-              <p class="font-bold text-gray-800 text-sm leading-tight">{{ inv.keterangan }}</p>
+              <div class="flex flex-col gap-1">
+                <p class="font-bold text-gray-800 text-sm leading-tight">{{ inv.keterangan }}</p>
+                <span v-if="inv.is_prioritas && inv.status !== 'paid'"
+                      class="self-start text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-700">
+                  Prioritas
+                </span>
+              </div>
               <span class="text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0"
                     :class="{
                       'bg-emerald-50 text-emerald-700': inv.status === 'paid',
@@ -79,17 +104,26 @@
               </div>
             </div>
 
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-end gap-2">
               <div>
-                <p class="text-[10px] text-gray-400">Total</p>
-                <p class="text-base font-black text-gray-800">Rp {{ inv.total.toLocaleString('id-ID') }}</p>
+                <p class="text-[10px] text-gray-400">{{ inv.status === 'partial' ? 'Sisa' : 'Total' }}</p>
+                <p class="text-base font-black text-gray-800">
+                  Rp {{ (inv.sisa ?? inv.total).toLocaleString('id-ID') }}
+                </p>
               </div>
-              <button v-if="inv.status !== 'paid'"
-                      @click="openUpload(inv)"
-                      class="bg-brand-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl
-                             active:bg-brand-800 transition-colors shadow-sm shadow-brand-700/30">
-                Upload Bukti
-              </button>
+              <div v-if="inv.status !== 'paid'" class="flex flex-col gap-2 items-end">
+                <button @click="openPaySaldo(inv)" :disabled="saldo < (inv.sisa ?? inv.total)"
+                        class="bg-emerald-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl
+                               active:bg-emerald-700 transition-colors shadow-sm shadow-emerald-600/30
+                               disabled:opacity-40 disabled:active:bg-emerald-600">
+                  Bayar dari Saldo
+                </button>
+                <button @click="openUpload(inv)"
+                        class="bg-brand-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl
+                               active:bg-brand-800 transition-colors shadow-sm shadow-brand-700/30">
+                  Transfer / Upload Bukti
+                </button>
+              </div>
               <span v-else class="flex items-center gap-1 text-emerald-600 text-sm font-semibold">
                 <CheckCircleIcon class="w-4 h-4" />
                 Lunas
@@ -183,6 +217,67 @@
       </div>
     </Transition>
 
+    <!-- Pay-from-saldo Backdrop -->
+    <Transition name="fade">
+      <div v-if="paySheet" class="fixed inset-0 bg-black/50 z-[60]" @click="paySheet = false" />
+    </Transition>
+
+    <!-- Pay-from-saldo Sheet -->
+    <Transition name="sheet-up">
+      <div v-if="paySheet"
+           class="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl shadow-2xl px-5 pt-5"
+           :style="{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }">
+        <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+            <WalletIcon class="w-5 h-5 text-emerald-600" />
+          </div>
+          <div>
+            <h3 class="text-gray-800 font-bold text-base">Bayar dari Saldo</h3>
+            <p class="text-xs text-gray-400">{{ paySelectedInv?.keterangan }}</p>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-4 mb-4 space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Jumlah dibayar</span>
+            <span class="font-bold text-gray-800">Rp {{ payAmount.toLocaleString('id-ID') }}</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Saldo saat ini</span>
+            <span class="font-medium text-gray-700">Rp {{ saldo.toLocaleString('id-ID') }}</span>
+          </div>
+          <div class="h-px bg-gray-200" />
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Saldo setelah bayar</span>
+            <span class="font-bold text-emerald-600">Rp {{ (saldo - payAmount).toLocaleString('id-ID') }}</span>
+          </div>
+        </div>
+
+        <p class="text-xs text-gray-400 mb-4">
+          Pembayaran ini <span class="font-semibold text-gray-600">langsung lunas</span> dan saldo tabungan akan
+          terpotong otomatis. Tidak perlu menunggu konfirmasi admin.
+        </p>
+
+        <div v-if="payError" class="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-red-600 text-sm font-medium mb-4">
+          {{ payError }}
+        </div>
+
+        <div class="flex gap-3">
+          <button @click="paySheet = false"
+                  class="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-700 font-semibold">
+            Batal
+          </button>
+          <button @click="confirmPaySaldo" :disabled="paying"
+                  class="flex-1 py-3.5 rounded-2xl bg-emerald-600 text-white font-bold
+                         disabled:opacity-60 active:bg-emerald-700">
+            {{ paying ? 'Memproses...' : 'Bayar Sekarang' }}
+          </button>
+        </div>
+      </div>
+    </Transition>
+
   </div>
 </template>
 
@@ -191,7 +286,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useSantriStore } from '@/stores/santri'
 import { waliApi } from '@/api/wali'
 import type { Tagihan } from '@/api/wali'
-import { ChevronLeftIcon, ArrowUpTrayIcon, PhotoIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
+import { ChevronLeftIcon, ArrowUpTrayIcon, PhotoIcon, CheckCircleIcon, WalletIcon } from '@heroicons/vue/24/outline'
 
 const santriStore   = useSantriStore()
 const activeSantri  = computed(() => santriStore.active)
@@ -202,6 +297,14 @@ const selectedInv   = ref<Tagihan['invoices'][0] | null>(null)
 const uploading     = ref(false)
 const uploadError   = ref('')
 const uploadForm    = ref({ file: null as File | null, preview: '', nominal: '', tanggal: '' })
+
+// ── Bayar dari saldo ─────────────────────────────────────────
+const saldo          = ref(0)
+const paySheet       = ref(false)
+const paySelectedInv = ref<Tagihan['invoices'][0] | null>(null)
+const paying         = ref(false)
+const payError       = ref('')
+const payAmount      = computed(() => paySelectedInv.value?.sisa ?? paySelectedInv.value?.total ?? 0)
 
 function statusLabel(s: string) {
   return { paid: 'Lunas', partial: 'Sebagian', unpaid: 'Belum Bayar' }[s] ?? s
@@ -240,11 +343,37 @@ async function submitUpload() {
   } finally { uploading.value = false }
 }
 
+function openPaySaldo(inv: Tagihan['invoices'][0]) {
+  paySelectedInv.value = inv
+  payError.value = ''
+  paySheet.value = true
+}
+
+async function confirmPaySaldo() {
+  if (!activeSantri.value || !paySelectedInv.value) return
+  paying.value = true; payError.value = ''
+  try {
+    await waliApi.bayarTagihanDariSaldo(activeSantri.value.id, paySelectedInv.value.id)
+    paySheet.value = false
+    await Promise.all([loadTagihan(), loadSaldo()])
+  } catch (e: any) {
+    payError.value = e?.response?.data?.message ?? 'Gagal membayar dari saldo. Coba lagi.'
+  } finally { paying.value = false }
+}
+
+async function loadSaldo() {
+  if (!activeSantri.value) return
+  try {
+    const t: any = await waliApi.tabungan(activeSantri.value.id)
+    saldo.value = Number(t?.saldo ?? 0)
+  } catch { saldo.value = 0 }
+}
+
 async function loadTagihan() {
   if (!activeSantri.value) return
   loading.value = true
   try { tagihan.value = await waliApi.tagihan(activeSantri.value.id) }
   finally { loading.value = false }
 }
-onMounted(loadTagihan)
+onMounted(() => { loadTagihan(); loadSaldo() })
 </script>

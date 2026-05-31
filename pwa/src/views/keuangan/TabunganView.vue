@@ -47,8 +47,31 @@
             <p class="text-white text-sm font-bold">{{ activeSantri?.nama ?? '—' }}</p>
           </div>
           <div class="text-right">
-            <p class="text-white/50 text-[10px] mb-0.5">No. Rekening</p>
-            <p class="text-white/80 text-sm font-mono">{{ tabungan?.no_rekening ?? '—' }}</p>
+            <p class="text-white/50 text-[10px] mb-0.5">NIS</p>
+            <p class="text-white/80 text-sm font-mono">{{ activeSantri?.nis ?? '—' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tagihan Prioritas (gating SPP/Ujian) -->
+    <div v-if="!loading && tabungan?.topup_jajan_locked" class="px-4 mb-4">
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <LockClosedIcon class="w-4 h-4 text-amber-600" />
+          </div>
+          <div class="flex-1">
+            <p class="text-amber-800 font-bold text-sm">Setor saldo terkunci</p>
+            <p class="text-amber-700 text-xs mt-0.5 leading-relaxed">
+              Lunasi tagihan prioritas (SPP &amp; Ujian) sebesar
+              <span class="font-bold">Rp {{ (tabungan?.tunggakan_prioritas ?? 0).toLocaleString('id-ID') }}</span>
+              terlebih dahulu. Pengecualian dapat diatur oleh staff pesantren.
+            </p>
+            <button @click="$router.push({ name: 'tagihan' })"
+                    class="mt-2.5 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-100 active:bg-amber-200">
+              Lihat Tagihan
+            </button>
           </div>
         </div>
       </div>
@@ -56,10 +79,11 @@
 
     <!-- Action: Setor Saldo -->
     <div class="px-4 mb-4">
-      <button @click="openTopupSheet"
+      <button @click="openTopupSheet" :disabled="tabungan?.topup_jajan_locked"
               class="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl
                      bg-brand-700 text-white font-bold shadow-sm shadow-brand-900/20
-                     active:bg-brand-800 active:scale-[0.99] transition-transform">
+                     active:bg-brand-800 active:scale-[0.99] transition-transform
+                     disabled:opacity-50 disabled:active:scale-100">
         <PlusCircleIcon class="w-5 h-5" />
         Setor Saldo
       </button>
@@ -90,7 +114,7 @@
                  :style="{ width: limitProgress + '%' }" />
           </div>
           <div class="flex justify-between text-xs text-gray-400">
-            <span>Terpakai: Rp {{ (tabungan?.terpakai_hari_ini ?? 0).toLocaleString('id-ID') }}</span>
+            <span>Terpakai: Rp {{ (tabungan?.transaksi_hari_ini ?? 0).toLocaleString('id-ID') }}</span>
             <span>Limit: Rp {{ (tabungan?.limit_harian ?? 0).toLocaleString('id-ID') }}</span>
           </div>
         </template>
@@ -100,15 +124,16 @@
     <!-- Stats Row -->
     <div class="px-4 mb-4 grid grid-cols-2 gap-3">
       <div class="bg-white rounded-2xl p-4 border border-gray-100/80 shadow-sm">
-        <p class="text-gray-400 text-xs mb-1">Pemasukan Bulan Ini</p>
+        <p class="text-gray-400 text-xs mb-1">Sisa Limit Hari Ini</p>
         <p class="text-emerald-600 font-black text-base">
-          Rp {{ (tabungan?.pemasukan_bulan ?? 0).toLocaleString('id-ID') }}
+          Rp {{ (tabungan?.saldo_dapat_dipakai ?? 0).toLocaleString('id-ID') }}
         </p>
       </div>
       <div class="bg-white rounded-2xl p-4 border border-gray-100/80 shadow-sm">
-        <p class="text-gray-400 text-xs mb-1">Pengeluaran Bulan Ini</p>
-        <p class="text-red-500 font-black text-base">
-          Rp {{ (tabungan?.pengeluaran_bulan ?? 0).toLocaleString('id-ID') }}
+        <p class="text-gray-400 text-xs mb-1">Tunggakan Prioritas</p>
+        <p class="font-black text-base"
+           :class="(tabungan?.tunggakan_prioritas ?? 0) > 0 ? 'text-red-500' : 'text-emerald-600'">
+          Rp {{ (tabungan?.tunggakan_prioritas ?? 0).toLocaleString('id-ID') }}
         </p>
       </div>
     </div>
@@ -127,9 +152,9 @@
         </div>
         <button @click="toggleFreeze"
                 class="w-12 h-6 rounded-full transition-colors duration-200 flex items-center px-0.5"
-                :class="tabungan?.frozen ? 'bg-blue-600' : 'bg-gray-200'">
+                :class="tabungan?.is_frozen ? 'bg-blue-600' : 'bg-gray-200'">
           <div class="w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
-               :class="tabungan?.frozen ? 'translate-x-6' : 'translate-x-0'" />
+               :class="tabungan?.is_frozen ? 'translate-x-6' : 'translate-x-0'" />
         </button>
       </div>
     </div>
@@ -297,7 +322,7 @@ const topupForm = ref<{ nominal: string; tanggal: string; namaPengirim: string; 
 
 const limitProgress = computed(() => {
   if (!tabungan.value?.limit_harian) return 0
-  return Math.min(100, (tabungan.value.terpakai_hari_ini / tabungan.value.limit_harian) * 100)
+  return Math.min(100, ((tabungan.value.transaksi_hari_ini ?? 0) / tabungan.value.limit_harian) * 100)
 })
 
 const progressColor = computed(() => {
@@ -324,10 +349,10 @@ async function saveLimit() {
 
 async function toggleFreeze() {
   if (!activeSantri.value || !tabungan.value) return
-  const newState = !tabungan.value.frozen
-  tabungan.value.frozen = newState
+  const newState = !tabungan.value.is_frozen
+  tabungan.value.is_frozen = newState
   try { await waliApi.freezeTabungan(activeSantri.value.id, newState) }
-  catch { tabungan.value.frozen = !newState }
+  catch { tabungan.value.is_frozen = !newState }
 }
 
 async function openTopupSheet() {
