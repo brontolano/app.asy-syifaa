@@ -153,12 +153,13 @@ export const DEMO_TAGIHAN = {
 // ── Tabungan ───────────────────────────────────────────────────
 export const DEMO_TABUNGAN = {
   saldo: 247500,
-  no_rekening: '101-2023001-8',
   limit_harian: 30000,
-  terpakai_hari_ini: 12500,
-  pemasukan_bulan: 300000,
-  pengeluaran_bulan: 187500,
-  frozen: false,
+  is_frozen: false,
+  transaksi_hari_ini: 12500,
+  saldo_dapat_dipakai: 17500,
+  last_transaction_at: '2026-05-29',
+  tunggakan_prioritas: 0,
+  topup_jajan_locked: false,
 }
 
 // ── Transaksi ──────────────────────────────────────────────────
@@ -340,9 +341,9 @@ export const mockApi = {
 
   transaksi: async (_id: number) => { await delay(); return DEMO_TRANSAKSI },
 
-  setLimitJajan: async (_id: number, limit: number) => { await delay(200); DEMO_TABUNGAN.limit_harian = limit; return { ok: true } },
+  setLimitJajan: async (_id: number, limit: number) => { await delay(200); DEMO_TABUNGAN.limit_harian = limit; DEMO_TABUNGAN.saldo_dapat_dipakai = DEMO_TABUNGAN.is_frozen ? 0 : Math.max(0, limit - DEMO_TABUNGAN.transaksi_hari_ini); return { ok: true } },
 
-  freezeTabungan: async (_id: number, frozen: boolean) => { await delay(200); DEMO_TABUNGAN.frozen = frozen; return { ok: true } },
+  freezeTabungan: async (_id: number, frozen: boolean) => { await delay(200); DEMO_TABUNGAN.is_frozen = frozen; DEMO_TABUNGAN.saldo_dapat_dipakai = frozen ? 0 : Math.max(0, DEMO_TABUNGAN.limit_harian - DEMO_TABUNGAN.transaksi_hari_ini); return { ok: true } },
 
   jadwal: async (_id: number) => { await delay(); return DEMO_JADWAL },
 
