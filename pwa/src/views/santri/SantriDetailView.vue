@@ -65,7 +65,19 @@
         <DetailRow label="Golongan Darah" :value="detail?.golongan_darah ?? '—'" />
         <DetailRow label="Tinggi Badan" :value="detail?.tinggi_badan ? `${detail.tinggi_badan} cm` : '—'" />
         <DetailRow label="Berat Badan" :value="detail?.berat_badan ? `${detail.berat_badan} kg` : '—'" />
-        <DetailRow label="Alamat" :value="detail?.alamat ?? '—'" multiline />
+      </div>
+    </div>
+
+    <!-- Alamat -->
+    <div class="px-4 mb-4">
+      <SectionLabel>Alamat</SectionLabel>
+      <div class="bg-white rounded-2xl border border-gray-100/80 shadow-sm overflow-hidden divide-y divide-gray-50">
+        <DetailRow label="Alamat Jalan" :value="detail?.alamat ?? '—'" multiline />
+        <DetailRow label="Desa/Kelurahan" :value="detail?.desa_kelurahan ?? '—'" />
+        <DetailRow label="Kecamatan" :value="detail?.kecamatan ?? '—'" />
+        <DetailRow label="Kab/Kota" :value="detail?.kab_kota ?? '—'" />
+        <DetailRow label="Provinsi" :value="detail?.provinsi ?? '—'" />
+        <DetailRow label="Kode Pos" :value="detail?.kode_pos ?? '—'" />
       </div>
     </div>
 
