@@ -33,4 +33,21 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
-          ssh "$VPS_USER@$VPS_HOST" "cd /var/www/app.asy-syifaa && git pull origin main"
+          ssh "$VPS_USER@$VPS_HOST" bash -s <<'DEPLOY'
+            set -e
+            cd /opt/asy-syifaa-app
+            git pull origin main
+
+            # Rebuild PWA jika ada perubahan frontend
+            if [ -f "pwa/package.json" ]; then
+              cd pwa
+              npm install --production 2>/dev/null || true
+              npm run build 2>/dev/null || true
+            fi
+
+            # Restart container
+            cd /opt/asy-syifaa-app
+            docker compose restart 2>/dev/null || true
+
+            echo "App deployed successfully at $(date)"
+          DEPLOY
